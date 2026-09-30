@@ -14,6 +14,7 @@ from moneylens.backend.data.schema import (
     SavingsProjection,
     ChatRequest,
     ChatResponse,
+    VisualBlock,
     ScenarioParameter,
     SavedScenario,
     UserPreference
@@ -242,24 +243,74 @@ def _query_remote_agent_runtime(user_prompt: str, user_id: str = "default_user")
         print(f"[RemoteAgentRuntime Warning] {exc}")
     return None
 
+def _generate_dynamic_visuals_and_followups(prompt: str, reply: str) -> tuple[List[VisualBlock], List[str]]:
+    """Synthesizes dynamic follow-up suggestions and interactive charts based on the agent's answer."""
+    try:
+        import json
+        from google import genai
+        from google.genai import types
+        
+        client = genai.Client()
+        schema_prompt = f"""Given this personal finance user prompt and the agent's verified answer, generate:
+1. Exactly 3 highly relevant, contextual follow-up questions tailored directly to the specific topic/numbers discussed (do NOT use generic repeated questions).
+2. If the answer discusses spending by category, comparisons, scenarios, or savings goals, generate 1 appropriate visual block (e.g. 'chart_bar', 'scenario_card', 'metric_card'). Otherwise return an empty visual_blocks array.
+
+User Prompt: "{prompt}"
+Agent Answer: "{reply}"
+
+Return valid JSON in this exact structure:
+{{
+  "suggested_follow_ups": ["Specific follow-up 1", "Specific follow-up 2", "Specific follow-up 3"],
+  "visual_blocks": [
+    {{
+      "type": "chart_bar | scenario_card | metric_card",
+      "title": "Short title",
+      "data": {{ ... }}
+    }}
+  ]
+}}
+"""
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=schema_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2
+            )
+        )
+        if response.text:
+            parsed = json.loads(response.text)
+            blocks = [
+                VisualBlock(type=b.get("type", "metric_card"), title=b.get("title"), data=b.get("data", {}))
+                for b in parsed.get("visual_blocks", [])
+            ]
+            follow_ups = parsed.get("suggested_follow_ups", [])
+            if follow_ups:
+                return blocks, follow_ups[:3]
+    except Exception as exc:
+        print(f"[DynamicVisuals Warning] {exc}")
+        
+    return [], [
+        f"Can you explain more about this?",
+        f"What if I change this next month?",
+        f"How does this impact my savings goal?"
+    ]
+
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_with_copilot(req: ChatRequest):
     try:
         # First query the deployed Vertex AI Agent Engine
         remote_reply = _query_remote_agent_runtime(req.prompt)
         if remote_reply:
+            visual_blocks, follow_ups = _generate_dynamic_visuals_and_followups(req.prompt, remote_reply)
             return ChatResponse(
                 message=remote_reply,
                 facts=[],
                 analysis=[],
                 suggestions=[],
-                visual_blocks=[],
-                suggested_follow_ups=[
-                    "What if I spend 20% less on restaurants?",
-                    "How much did I spend in September?",
-                    "Am I on track for my savings goal?"
-                ],
-                tool_calls_executed=["the_lens"]
+                visual_blocks=visual_blocks,
+                suggested_follow_ups=follow_ups,
+                tool_calls_executed=["vertex_ai_agent_runtime:the_lens"]
             )
             
         # Fallback to local agent if cloud call is unavailable
@@ -271,6 +322,7 @@ def chat_with_copilot(req: ChatRequest):
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
