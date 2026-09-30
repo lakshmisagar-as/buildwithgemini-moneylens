@@ -250,16 +250,16 @@ def chat_with_copilot(req: ChatRequest):
         if remote_reply:
             return ChatResponse(
                 message=remote_reply,
-                facts=[f"Answered via Vertex AI Agent Runtime ({RE_ID.split('/')[-1]})"],
-                analysis=["Processed deterministically by Google ADK Agent"],
-                suggestions=["Ask a follow-up or run a simulation scenario!"],
+                facts=[],
+                analysis=[],
+                suggestions=[],
                 visual_blocks=[],
                 suggested_follow_ups=[
                     "What if I spend 20% less on restaurants?",
                     "How much did I spend in September?",
                     "Am I on track for my savings goal?"
                 ],
-                tool_calls_executed=["vertex_ai_agent_runtime:the_lens"]
+                tool_calls_executed=["the_lens"]
             )
             
         # Fallback to local agent if cloud call is unavailable
@@ -271,6 +271,7 @@ def chat_with_copilot(req: ChatRequest):
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # --- Serve Static Frontend in Production ---

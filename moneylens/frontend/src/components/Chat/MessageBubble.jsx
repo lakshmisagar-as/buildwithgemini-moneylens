@@ -41,45 +41,9 @@ export default function MessageBubble({ message, onSelectFollowUp }) {
           {/* Main Conversational Box */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none p-5 shadow-sm text-slate-200">
             {/* Primary message */}
-            <p className="text-sm font-medium text-slate-100 mb-3 leading-relaxed">
+            <p className="text-sm font-medium text-slate-100 leading-relaxed whitespace-pre-wrap">
               {payload.message || message.content}
             </p>
-
-            {/* Facts Section */}
-            {payload.facts && payload.facts.length > 0 && (
-              <div className="mt-3 mb-2 bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
-                <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase flex items-center space-x-1.5 mb-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Verified Facts</span>
-                </span>
-                <ul className="space-y-1 text-xs text-slate-300">
-                  {payload.facts.map((fact, idx) => (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <span className="text-emerald-400">•</span>
-                      <span>{fact}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Analysis Section */}
-            {payload.analysis && payload.analysis.length > 0 && (
-              <div className="mt-2 mb-2 bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
-                <span className="text-[11px] font-bold tracking-wider text-sky-400 uppercase flex items-center space-x-1.5 mb-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Financial Analysis</span>
-                </span>
-                <ul className="space-y-1 text-xs text-slate-300">
-                  {payload.analysis.map((item, idx) => (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <span className="text-sky-400">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
             {/* Suggestions Section */}
             {payload.suggestions && payload.suggestions.length > 0 && (
