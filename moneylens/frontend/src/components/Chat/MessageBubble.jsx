@@ -3,6 +3,35 @@ import { User, Sparkles, CheckCircle2, TrendingUp, Lightbulb } from 'lucide-reac
 import VisualBlocks from './VisualBlocks';
 import ToolTracesBadge from './ToolTracesBadge';
 
+// Simple markdown parser for bold, italics, and line breaks
+function renderFormattedMessage(text) {
+  if (!text) return null;
+  
+  // Split by line breaks first
+  const lines = text.split('\n');
+  
+  return lines.map((line, lineIdx) => {
+    // Parse **bold** markers
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    
+    return (
+      <React.Fragment key={lineIdx}>
+        {parts.map((part, partIdx) => {
+          if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+            return (
+              <strong key={partIdx} className="font-semibold text-emerald-300">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        })}
+        {lineIdx < lines.length - 1 && <br />}
+      </React.Fragment>
+    );
+  });
+}
+
 export default function MessageBubble({ message, onSelectFollowUp }) {
   const isUser = message.role === 'user';
 
@@ -41,9 +70,9 @@ export default function MessageBubble({ message, onSelectFollowUp }) {
           {/* Main Conversational Box */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none p-5 shadow-sm text-slate-200">
             {/* Primary message */}
-            <p className="text-sm font-medium text-slate-100 leading-relaxed whitespace-pre-wrap">
-              {payload.message || message.content}
-            </p>
+            <div className="text-sm font-medium text-slate-100 leading-relaxed">
+              {renderFormattedMessage(payload.message || message.content)}
+            </div>
 
             {/* Suggestions Section */}
             {payload.suggestions && payload.suggestions.length > 0 && (
